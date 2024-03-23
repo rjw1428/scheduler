@@ -18,7 +18,7 @@
         <div style="flex: 0 0 200px">
           <button (click)="removeTeamMember(member._id)">X</button>
           <button (click)="selectedTeamMember$.next(member); teamMemberSerivceDialog.show()">Edit Services</button>
-          <button (click)="teamMemberOffRequest(member._id)">Req Off</button>
+          <button (click)="selectedTeamMember$.next(member); requestOffDialog.show()">Req Off</button>
         </div>
       </div>
     }
@@ -71,6 +71,40 @@
         </form>
       }
     }
+    </dialog>
+
+    <dialog #requestOffDialog>
+      <h2>Request Off</h2>
+      @if (selectedTeamMember$ | async; as selectedTeamMember) {
+        <form method="dialog" 
+          [formGroup]="requestOffForm"
+          style="display: flex; flex-direction: column;">
+          @if (requestOffForm.get('isFullDay')?.value; as fullDay) {
+            <label>Start
+              <input type="date" formControlName="start">
+            </label>
+            <label>End
+              <input type="date" formControlName="end">
+            </label>
+          } @else {
+            <label>Start
+              <input type="datetime-local" formControlName="start">
+            </label>
+            <label>End
+              <input type="datetime-local" formControlName="end">
+            </label>
+          }
+
+          <label>
+            Full Days?
+            <input type="checkbox" formControlName="isFullDay">
+          </label>
+          <div>
+            <button type="reset" (click)="requestOffDialog.close()">Cancel</button>
+            <button type="submit" (click)="teamMemberOffRequest(selectedTeamMember._id, requestOffForm, requestOffDialog); $event.preventDefault()">Save</button>
+          </div>
+        </form>
+      }
     </dialog>
 
   </section>

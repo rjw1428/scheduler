@@ -5,18 +5,57 @@ import { collections } from '../constants'
 
 export const requestOff = {
   v1: {
-    endpoint: '/v1/request-off',
-    validation: validateRequest(['vendorId', 'providerId'], ['date']),
+    endpoint: '/v1/availability',
+    validation: validateRequest(['vendorId', 'providerId'], ['start', 'end']),
     handler: async (req: Request, res: Response) => {
       try {
         const vendorId = req.query['vendorId']!
         const providerId = req.query['providerId']!
-        const date = new Date(req.body['date'])
-        const update = { ...req.body, date }
+        const start = new Date(req.body['start'])
+        const end = new Date(req.body['end'])
+        const update = { ...req.body, start, end }
         const collection = await getCollection(collections.availablity)
-        const result = await collection.findOneAndUpdate({vendorId, providerId: new ObjectId(providerId.toString())}, { $push: { unavailableRequests: update }})
+        const result = await collection.findOneAndUpdate(
+          {vendorId, providerId: new ObjectId(providerId.toString())}, 
+          { $push: { unavailableRequests: update }}
+        )
         console.log(result);
         res.send(result);
+      } catch (err) {
+        res.status(500).send(getErrorMessage(err));
+      }
+    }
+  }
+}
+
+export const validateOffRequest = {
+  v1: {
+    endpoint: '/v1/validate-availability',
+    validation: validateRequest(['vendorId', 'providerId'], ['start', 'end']),
+    handler: async (req: Request, res: Response) => {
+      try {
+        const vendorId = req.query['vendorId']!
+        const providerId = req.query['providerId']!
+        const start = new Date(req.body['start'])
+        const end = new Date(req.body['end'])
+
+        const collection = await getCollection(collections.availablity)
+        const result = await collection.find(
+          { 
+            vendorId, 
+            providerId: new ObjectId(providerId.toString()),
+            unavailableRequests: {
+              $elemMatch: {
+                start: { $gte: start },
+                end: { $lte: end }
+              }
+            }
+          }
+        )
+        .project({ unavailableRequests: 1 })
+        .toArray()
+        console.log(result);
+        res.send(result.length == 0);
       } catch (err) {
         res.status(500).send(getErrorMessage(err));
       }
